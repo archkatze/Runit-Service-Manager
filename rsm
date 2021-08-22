@@ -15,7 +15,7 @@ export SVDIR=${SVDIR:-/run/runit/service/}
 export LOGDIR="/var/log/"
 export RSVDIR="/run/runit/service/"
 export FLDIR=${FLDIR:-/etc/runit/sv/}
-
+export EDITOR=${EDITOR:-vi}
 
 charup='✔'
 chardown='X'
@@ -171,7 +171,7 @@ ${colorgreen}reload <service>         $cr Reload the service (send SIGHUP)
 ${colorgreen}logs <service>           $cr Outputs the service's logfilenames and their access & error logs from /var/log/<serice>/
 ${colorgreen}alllogs <service>        $cr The same like logs <service>
 ${colorgreen}errorlogs <service>      $cr Outputs the service's logfilenames and their errorlogs from /var/log/<serice>/
-
+${colorgreen}edit <service>           $cr Edits the service's run file using the EDITOR environment variable
 
 ${coloryellow}EXAMPLES:${colorgreen}
 ${colorgreen}$progname                      $cr Show service status in /var/service
@@ -611,6 +611,51 @@ do_sv_cmd() {
 	return "$ret"
 }
 
+# edit service command 
+do_edit(){
+	if (($# < 1)); then
+		rmsg -1 "Argument expected for 'rsm $1'"
+		return
+	fi
+
+	# proper return codes?
+
+	svc=$1
+
+	if ! [[ $svc =~ $svc_re ]]; then
+		rmsg 2 "unexpected characters in name: '$svc'" >&2
+		return 2
+	fi
+
+	# ensure service exists
+	if ! [[ -d ${FLDIR}${svc} ]]; then
+		rmsg 3 "service directory '$svc' does not exist" >&2
+		return 3
+	fi
+
+	msg "Running rsm command (EDITOR=$EDITOR rsm $svc)"
+
+	file=$svc/run
+
+	if [ ! -w "$file" ]; then
+		rmsg 4 "Insufficient permissions to write to $FLDIR$file"
+		return 4
+	fi
+
+	if ! command -v "$EDITOR" &> /dev/null; then
+		rmsg 5 "EDITOR $EDITOR isn't installed"
+		return 5
+	fi
+
+	${EDITOR} "$file"
+
+	local ret=$?
+	
+	rmsg "$ret" "[$EDITOR $FLDIR$file], exit code: $ret"
+
+	return "$ret"
+}
+
 colors_set=false
 tree=false
 log=false
@@ -664,6 +709,9 @@ case "$cmd" in
 	errorlogs)
 		do_show_err_logs "$@" 
 		;; 
+	edit)
+		do_edit "$@"
+		;;
 
 	*)
 		if $tree; then

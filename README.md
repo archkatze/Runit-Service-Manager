@@ -1,8 +1,8 @@
 # `rsm` - Runit Service Manager
 
-- This is the CLI Runit Service Manager {rsm}, forked from Void Service Manager {vsv}  https://github.com/bahamas10/vsv/blob/master/vsv
+- This is the CLI Runit Service Manager {rsm}, forked from https://gitea.artixlinux.org/linuxer/Runit-Service-Manager, which is a fork of Void Service Manager {vsv} https://github.com/bahamas10/vsv/blob/master/vsv
 
-- Terminal Commands are exactly the same as sv, but produces a beautified layout.
+- Terminal Commands are pretty much the same as sv with a beautified layout.
 
 ![](https://imgur.com/S9zdEIU.png)
 
@@ -23,6 +23,7 @@ Quick Examples:
 - `rsm hup <svc>` - refresh a service (`SIGHUP`)
 - `rsm logs <svc>` or `rsm alllogs <svc>` - lists all logs for a service (access and error)
 - `rsm errorlogs <svc>` - lists all error logs for a service
+- `rsm edit <svc>` - edit the run file of a service with the EDITOR environment variable
 
 Status:
 
