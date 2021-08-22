@@ -6,9 +6,9 @@
 # Date: August 29, 2018
 # License: MIT
 
-VSV_VERSION='v1.3.4'
+RSV_VERSION='v1.3.4'
 
-export SVDIR=${SVDIR:-/var/service}
+export SVDIR=${SVDIR:-/run/runit/service/}
 
 charup='✔'
 chardown='X'
@@ -115,10 +115,10 @@ usage() {
 	logo=$(getlogo)
 
 	cat <<EOF
-$colormagenta __   _______   __
-$colormagenta \\ \\ / / __\\ \\ / /  $colorgreen Void Service Manager ($VSV_VERSION)
-$colormagenta  \\ V /\\__ \\\\ V /   $colorgreen Source: https://github.com/bahamas10/vsv
-$colormagenta   \\_/ |___/ \\_/    $colorgreen MIT License
+$colormagenta ______   ____  __  __
+$colormagenta | | \ \ / ___\ \ \/ /  $colorgreen Runit Service Manager ($RSV_VERSION)
+$colormagenta | |_/ / \____   \  /   $colorgreen Source: https://github.com/bahamas10/vsv
+$colormagenta | | \ \ \____/   \/    $colorgreen MIT License
 
 $logo   $colorblue Manage and view runit services
 $logo   $colorblue Made specifically for Void Linux but should work anywhere
@@ -510,7 +510,7 @@ while getopts 'c:d:hltuvV' option; do
 		t) tree=true; cmd='status';;
 		u) SVDIR=~/runit/service;;
 		v) ((verbosity++));;
-		V) echo "$VSV_VERSION"; exit 0;;
+		V) echo "$RSV_VERSION"; exit 0;;
 		*) do_usage=1;;
 	esac
 done

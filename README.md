@@ -1,152 +1,28 @@
-`vsv` - Void Service Manager
-============================
+# `rsm` - Runit Service Manager
 
-Manage and view runit services.
+- This is the CLI Runit Service Manager {rsm}, forked from Void Service Manager {vsv}  https://github.com/bahamas10/vsv/blob/master/vsv
 
-`vsv` was inspired by [`vpm`](https://github.com/netzverweigerer/vpm).  `vsv` is
-to `sv` as `vpm` is to the `xbps-*` commands.
+- Terminal Commands are exactly the same as sv, but produces a beautified layout.
 
-See my blog post on `vsv` here: https://www.daveeddy.com/2018/09/20/vsv-void-service-manager/
+![](https://imgur.com/S9zdEIU.png)
 
-![vsv-status.jpg](screenshots/vsv-status.jpg)
-
-Installation
-------------
-
-On [Void Linux](https://voidlinux.org/) run:
-
-    xbps-install vsv
-
-Alternative Installation
-------------------------
-
-`vsv` is a standalone bash script that can be dumped anywhere in your `$PATH`
-to be used.
-
-### `git`
-
-I personally install it with `git` (with `~/bin` in my `$PATH`):
-
-    mkdir -p ~/bin ~/dev
-    cd ~/dev
-    git clone git://github.com/bahamas10/vsv.git
-    ln -s ~/dev/vsv/vsv ~/bin
-
-### `curl` or `wget`
-
-You can use `curl` or `wget` to pull the script directly from GitHub:
-
-    mkdir -p ~/bin
-    cd ~/bin
-    wget https://raw.githubusercontent.com/bahamas10/vsv/master/vsv
-    # or
-    curl -O https://raw.githubusercontent.com/bahamas10/vsv/master/vsv
-    # and then
-    chmod +x ~/bin/vsv
-
-### `Makefile`
-
-You can use the Makefile in this repo:
-
-    $ sudo make install
-    cp vsv /usr/local/bin
-    cp man/vsv.8 /usr/local/share/man/man8/vsv.8
-
-And uninstall with:
-
-    $ sudo make uninstall
-    rm -f /usr/local/bin/vsv
-    rm -f /usr/local/share/man/man8/vsv.8
-
-Examples
---------
-
-**Note:** Some screenshots are outdated or command output may have changed
-slightly in newer versions of `vsv`.
-
-Run `vsv` without any arguments to get process status.  This is equivalent to
-running `vsv status`:
-
-![vsv-status.jpg](screenshots/vsv-status.jpg)
-
-**Note:** `sudo` or escalated privileges are required to determine service state
-because of the strict permissions on each service's `supervise` directory.
-
-`vsv` scans the `/var/service` directory by default, which can be overridden by
-setting the `$SVDIR` environmental variable or passing in a `-d <dir>` argument.
-Any service that has been in a state for less than 5 seconds will be marked
-in red, making new or failing services easy to spot:
-
-![vsv-add-service.jpg](screenshots/vsv-add-service.jpg)
-
-Services in a state for more than 5 seconds but less than 30 seconds will be
-highlighted in yellow:
-
-![vsv-service-status-yellow.jpg](screenshots/vsv-service-status-yellow.jpg)
-
-A string can be passed as the first argument after `status` to filter for
-services that contain that string in their name.  Also, `-t` can be supplied to
-`status` to print the process tree of the pid for that process:
-
-![vsv-arguments.jpg](screenshots/vsv-arguments.jpg)
-
-Any command other than `status` will be passed directly to the `sv` command.
-Restarting a service is as easy as `vsv restart <svc>`:
-
-![vsv-restart.jpg](screenshots/vsv-restart.jpg)
-
-To stop a service, `vsv down <svc>` or `vsv stop <svc>` can be used:
-
-![vsv-down.jpg](screenshots/vsv-down.jpg)
-
-A full service tree can be generated with `vsv -t`.  This command is equivalent
-to running `vsv status -t`:
-
-![vst-tree-large.jpg](screenshots/vst-tree-large.jpg)
-
-`-l` can be specified to view log services for each service as well.  This
-command is equivalent to running `vsv status -l virt`:
-
-![vsv-log.jpg](screenshots/vsv-log.jpg)
-
-`-t` can be specified with `-l` to view log services as a tree for each service
-as well as normal services.  This command is equivalent to running `vsv status
--tl virt`:
-
-![vsv-log-tree.jpg](screenshots/vsv-log-tree.jpg)
-
-`vsv` also first-classes the notion of "user services".  I wrote about this in
-my blog post for [Using Linux As My Daily
-Driver](https://www.daveeddy.com/2018/09/15/using-void-linux-as-my-daily-driver/)
-Basically, I have a separate instance of `runsvdir` running as my user out of
-`~/runit/service`, and the `vsv` script is set up to look in that location when
-invoked with `-u`.
-
-![vsv-user-u.jpg](screenshots/vsv-user-u.jpg)
-
-Note that `-u` is just a shortcut for `-d ~/runit/service` - technically, any
-directory can be specified with that option:
-
-![vsv-user-d.jpg](screenshots/vsv-user-d.jpg)
-
-All of the commands and options are supported when `-u` or `-d <dir>` is
-specified.
-
-![vsv-user-log.jpg](screenshots/vsv-user-log.jpg)
+## Manage and view runit services.
 
 Usage
 -----
 
 Quick Examples:
 
-- `vsv` - show all services
-- `vsv status` - same as above
-- `vsv stop <svc>` - stop a service
-- `vsv start <svc>` - start a service
-- `vsv restart <svc>` - restart a service
-- `vsv enable <svc>` - enable a service (autostart at boot)
-- `vsv disable <svc>` - disable a service (no autostart at boot)
-- `vsv hup <svc>` - refresh a service (`SIGHUP`)
+- `rsm` - show all services
+- `rsm status` - same as above
+- `rsm stop <svc>` - stop a service
+- `rsm start <svc>` - start a service
+- `rsm restart <svc>` - restart a service, or start service right after `rsm enable <svc>`
+- `rsm enable <svc>` - enable a service (autostart at boot)
+- `rsm disable <svc>` - disable a service (no autostart at boot)
+- `rsm hup <svc>` - refresh a service (`SIGHUP`)
+- `rsm logs <svc>` or `rsm alllogs <svc>` - lists all logs for a service (access and error)
+- `rsm errorlogs <svc>` - lists all error logs for a service
 
 Status:
 
@@ -161,19 +37,13 @@ The `status` subcommand has the following fields:
 
 Command Usage:
 
-    $ vsv -h
-     __   _______   __
-     \ \ / / __\ \ / /   Void Service Manager (v1.3.0)
-      \ V /\__ \\ V /    Source: https://github.com/bahamas10/vsv
-       \_/ |___/ \_/     MIT License
-
-    [vsv]    Manage and view runit services
-    [vsv]    Made specifically for Void Linux but should work anywhere
-    [vsv]    Author: Dave Eddy <dave@daveeddy.com> (bahamas10)
+    [rsm]    Manage and view runit services
+    [rsm]    Made specifically for Void Linux but should work anywhere
+    [rsm]    Author: Dave Eddy <dave@daveeddy.com> (bahamas10)
 
     USAGE:
-    vsv [OPTIONS] [SUBCOMMAND] [<ARGS>]
-    vsv [-u] [-d <dir>] [-h] [-t] [SUBCOMMAND] [...]
+    rsm [OPTIONS] [SUBCOMMAND] [<ARGS>]
+    rsm [-u] [-d <dir>] [-h] [-t] [SUBCOMMAND] [...]
 
     OPTIONS:
     -c <yes|no|auto>          Enable/disable color output, defaults to auto
@@ -209,15 +79,15 @@ Command Usage:
     reload <service>          Reload the service (send SIGHUP)
 
     EXAMPLES:
-    vsv                       Show service status in /var/service
-    vsv status                Same as above
-    vsv -t                    Show service status + pstree output
-    vsv status -t             Same as above
-    vsv status tty            Show service status for any service that matches tty*
-    vsv check uuidd           Check the uuidd svc, wrapper for 'sv check uuidd'
-    vsv restart sshd          Restart sshd, wrapper for 'sv restart sshd'
-    vsv -u                    Show service status in ~/runit/service
-    vsv -u restart ssh-agent  Restart ssh-agent in ~/runit/service/ssh-agent
+    rsm                       Show service status in /var/service
+    rsm status                Same as above
+    rsm -t                    Show service status + pstree output
+    rsm status -t             Same as above
+    rsm status tty            Show service status for any service that matches tty*
+    rsm check uuidd           Check the uuidd svc, wrapper for 'sv check uuidd'
+    rsm restart sshd          Restart sshd, wrapper for 'sv restart sshd'
+    rsm -u                    Show service status in ~/runit/service
+    rsm -u restart ssh-agent  Restart ssh-agent in ~/runit/service/ssh-agent
 
 Syntax
 ------
@@ -229,7 +99,7 @@ This project uses:
 
 ```
 $ make check
-shellcheck vsv
+shellcheck rsm
 ```
 
 License

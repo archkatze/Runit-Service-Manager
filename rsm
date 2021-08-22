@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 #
-# Void Linux service manager (runit)
+# Artix Linux service manager (runit)
+# Forked and further developed, by: linuxer <linuxer@artixlinux.org> 
+# Fork Date: August 15, 2020 as rsv
+# Renamed and further developed as rsm from: January 10, 2021  
 #
-# Author: Dave Eddy <dave@daveeddy.com>
+# Original Author (vsv): Dave Eddy <dave@daveeddy.com>
 # Date: August 29, 2018
 # License: MIT
 
-VSV_VERSION='v1.3.4'
+RSM_VERSION='v1.4.5'
 
-export SVDIR=${SVDIR:-/var/service}
+export SVDIR=${SVDIR:-/run/runit/service/}
+export LOGDIR="/var/log/"
+export RSVDIR="/run/runit/service/"
+export FLDIR=${FLDIR:-/etc/runit/sv/}
+
 
 charup='✔'
 chardown='X'
@@ -115,14 +122,15 @@ usage() {
 	logo=$(getlogo)
 
 	cat <<EOF
-$colormagenta __   _______   __
-$colormagenta \\ \\ / / __\\ \\ / /  $colorgreen Void Service Manager ($VSV_VERSION)
-$colormagenta  \\ V /\\__ \\\\ V /   $colorgreen Source: https://github.com/bahamas10/vsv
-$colormagenta   \\_/ |___/ \\_/    $colorgreen MIT License
+$colormagenta ______   ____  __  __
+$colormagenta | | \ \ / ___\ | \/ |  $colorgreen Runit Service Manager for Artix Linux ($RSM_VERSION)
+$colormagenta | |_/ / \____  | || |  $colorgreen Source: https://gitea.artixlinux.org/linuxer/Runit-Service-Manager
+$colormagenta | | \ \ \____/ | || |  $colorgreen MIT License
 
 $logo   $colorblue Manage and view runit services
 $logo   $colorblue Made specifically for Void Linux but should work anywhere
 $logo   $colorblue Author: Dave Eddy <dave@daveeddy.com> (bahamas10)
+$logo   $colorblue Forked specifically for Artix Linux and renamed to rsm, for further development
 
 ${coloryellow}USAGE:${colorgreen}
 $progname [OPTIONS] [SUBCOMMAND] [<ARGS>]
@@ -130,7 +138,7 @@ $progname [-u] [-d <dir>] [-h] [-t] [SUBCOMMAND] [...]
 
 ${coloryellow}OPTIONS:${colorgreen}
 ${colorgreen}-c <yes|no|auto>         $cr Enable/disable color output, defaults to auto
-${colorgreen}-d <dir>                 $cr Directory to look into, defaults to env SVDIR or /var/service if unset
+${colorgreen}-d <dir>                 $cr Directory to look into, defaults to env SVDIR or /run/runit/service is unset
 ${colorgreen}-h                       $cr Print this message and exit
 ${colorgreen}-l                       $cr Show log processes, this is a shortcut for 'status -l'
 ${colorgreen}-t                       $cr Tree view, this is a shortcut for 'status -t'
@@ -160,6 +168,10 @@ ${colorgreen}start <service>          $cr Start the service
 ${colorgreen}stop <service>           $cr Stop the service
 ${colorgreen}restart <service>        $cr Restart the service
 ${colorgreen}reload <service>         $cr Reload the service (send SIGHUP)
+${colorgreen}logs <service>           $cr Outputs the service's logfilenames and their access & error logs from /var/log/<serice>/
+${colorgreen}alllogs <service>        $cr The same like logs <service>
+${colorgreen}errorlogs <service>      $cr Outputs the service's logfilenames and their errorlogs from /var/log/<serice>/
+
 
 ${coloryellow}EXAMPLES:${colorgreen}
 ${colorgreen}$progname                      $cr Show service status in /var/service
@@ -379,7 +391,9 @@ do_status() {
 		fi
 
 		if [[ -n $filter && $svc != *"$filter"* ]]; then
-			verbose "filtering out '$svc' because match '$filter'"
+			if [[ $verbosity != 1 ]]; then
+				verbose "filtering out '$svc' because it does not match '$filter'"
+			fi
 			continue
 		fi
 
@@ -449,7 +463,7 @@ do_enable_disable() {
 		fi
 
 		# ensure service exists
-		if ! [[ -d $svc ]]; then
+		if ! [[ -d ${FLDIR}${svc} ]]; then
 			rmsg -1 "service directory '$svc' does not exist" >&2
 			continue
 		fi
@@ -462,6 +476,9 @@ do_enable_disable() {
 				if ! rm -f "$file"; then
 					rmsg 1 "failed to enable '$svc'"
 					ret=1
+				else
+					ln -s ${FLDIR}${svc} ${SVDIR}
+					do_status
 				fi
 				;;
 			disable)
@@ -469,6 +486,9 @@ do_enable_disable() {
 				if ! disable_message "$svc" > "$file"; then
 					rmsg 1 "failed to disable '$svc'"
 					ret=1
+				else
+					unlink ${SVDIR}${svc} 
+					do_status
 				fi
 				;;
 			*)
@@ -478,6 +498,101 @@ do_enable_disable() {
 		esac
 	done
 
+	rmsg "$ret" "[$progname $cmd $*], exit code: $ret"
+	return "$ret"
+}
+
+# show logs
+do_show_logs() {
+	local cmd=$1
+	local svc
+	local ret=0
+	local file
+	shift
+
+	# Loop all arguments as services
+	msg "Running $progname $cmd $*"
+
+	for svc in "$@"; do
+		# Validate service name
+		if ! [[ $svc =~ $svc_re ]]; then
+			rmsg -1 "unexpected characters in name: '$svc'" >&2
+			continue
+		fi
+	done
+	
+	
+	if [[ -f "${RSVDIR}${cmd}" ]]; then
+		if ! [[ -d ${RSVDIR}${cmd} ]]; then
+			printf "\n%20s\n" "${colorgreen}The following log files found:"    
+			local logs_files_array=($(ls /var/log/$cmd/*.*))
+			printf "\n$colorblue"
+			printf '%s\n' "${logs_files_array[@]}" 
+	    
+			printf "\n$colormagenta"
+			read -n 1 -s -r -p "Press any key to continue"
+	    
+			printf "\n"
+			printf "\n${colorcyan}Log files full output:\n"
+			printf "${coloryellow}\n"
+			printf "${coloryellow}${opt}"
+	    
+			tail -n 10  ${LOGDIR}${cmd}/*.* | more 
+			printf "\n"	
+		fi
+	fi
+	
+	if ! [[ -f "${RSVDIR}${cmd}" ]]; then
+			printf "\n%20s\n" "${colorred}The service's ${cmd} log files have not been found or do not exist"
+	fi
+	
+	rmsg "$ret" "[$progname $cmd $*], exit code: $ret"
+	return "$ret"
+}
+
+# show error logs
+do_show_err_logs() {
+	local cmd=$1
+	local svc
+	local ret=0
+	local file
+	shift
+
+	# Loop all arguments as services
+	msg "Running $progname $cmd $*"
+
+	for svc in "$@"; do
+		# Validate service name
+		if ! [[ $svc =~ $svc_re ]]; then
+			rmsg -1 "unexpected characters in name: '$svc'" >&2
+			continue
+		fi
+	done
+	
+	if [[ -f "${RSVDIR}${cmd}" ]]; then
+		if ! [[ -d ${RSVDIR}${cmd} ]]; then
+			printf "\n%20s\n" "${colorred}The following error log files found:"    
+			local logs_files_array=($(ls /var/log/$cmd/*error*.*))
+			printf "\n$colorblue"
+			printf '%s\n' "${logs_files_array[@]}" 
+	    
+			printf "\n$colormagenta"
+			read -n 1 -s -r -p "Press any key to continue"
+	    
+			printf "\n"
+			printf "\n${colorcyan}Log files full output:\n"
+			printf "${coloryellow}\n"
+			printf "${coloryellow}${opt}"
+	    
+			tail -n 10  ${LOGDIR}${cmd}/*error*.* | more 
+			printf "\n"
+		fi
+	fi
+	
+	if ! [[ -f "${RSVDIR}${cmd}" ]]; then
+			printf "\n%20s\n" "${colorred}The service's ${cmd} error log files have not been found or do not exist"
+	fi
+	
 	rmsg "$ret" "[$progname $cmd $*], exit code: $ret"
 	return "$ret"
 }
@@ -500,7 +615,7 @@ colors_set=false
 tree=false
 log=false
 do_usage=-1
-verbosity=0
+verbosity=1
 while getopts 'c:d:hltuvV' option; do
 	case "$option" in
 		c) setcolors "$OPTARG"; colors_set=true;;
@@ -510,7 +625,7 @@ while getopts 'c:d:hltuvV' option; do
 		t) tree=true; cmd='status';;
 		u) SVDIR=~/runit/service;;
 		v) ((verbosity++));;
-		V) echo "$VSV_VERSION"; exit 0;;
+		V) echo "$RSM_VERSION"; exit 0;;
 		*) do_usage=1;;
 	esac
 done
@@ -540,6 +655,16 @@ case "$cmd" in
 	enable|disable)
 		do_enable_disable "$cmd" "$@"
 		;;
+	logs)
+		do_show_logs "$@" 
+		;; 
+	alllogs)
+		do_show_logs "$@" 
+		;;		
+	errorlogs)
+		do_show_err_logs "$@" 
+		;; 
+
 	*)
 		if $tree; then
 			rmsg -1 "-t can only be specified with 'status'"
