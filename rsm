@@ -262,7 +262,7 @@ process_service() {
 		err=
 		state=$(< "$svc/supervise/stat")
 		pid=$(< "$svc/supervise/pid")
-		when=$(stat --printf %Y "$svc/supervise/pid")
+		when=$(stat -c %Y "$svc/supervise/pid")
 		up=$((now - when))
 		msg=$(human "$up")
 
